@@ -1,0 +1,4 @@
+// add.h
+#pragma once
+
+int add(int x, int y);
