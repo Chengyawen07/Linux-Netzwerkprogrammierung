@@ -1,5 +1,9 @@
 #include "http_conn.h"
+#include <string.h>
 
+// 给共享的static epollfd 和 user_count 初始化
+int http_conn::m_epollfd = -1;
+int http_conn::m_user_count = 0;
 
 // 设置文件描述符非阻塞
 void setnonblocking(int fd){
@@ -45,7 +49,6 @@ void modifyfd(int epollfd, int fd, int ev) {
     epoll_ctl(epollfd, EPOLL_CTL_MOD, fd, &event);  // 用来操作 epoll 实例, 用来modify fd
 }
 
-
 // http_conn类内函数：初始化连接client connection
 void http_conn::init(int sockfd, const sockaddr_in & addr) {
     m_sockfd = sockfd;
@@ -71,4 +74,71 @@ void http_conn::close_conn(){
     }
 
 }
+
+// 循环读取客户数据，直到无数据可读，或对方关闭连接
+bool http_conn::read(){
+    printf("一次性读完所有数据\n");
+    if(m_read_idx >= READ_BUFFER_SIZE) {
+        return false;
+    }
+
+    // 这次读取到的字节
+    int bytes_read = 0;
+    while(true) {
+        // m_read_buf 数据已读取的位置
+        // m_read_idx 偏移量：当前缓冲区中有效数据的索引
+        bytes_read = recv(m_sockfd, m_read_buf + m_read_idx, READ_BUFFER_SIZE - m_read_idx, 0);
+        if(bytes_read == -1){
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                break;
+            }
+            return false;
+        } else if(bytes_read == 0){
+            // ==0, 表示对方关闭连接（也就是没有读到数据）
+            return false;
+        } else {
+            // 成功读取数据的时候：将读取的字节数累加到 m_read_idx
+            m_read_idx += bytes_read;
+        }
+
+
+    }
+
+    return true;
+}
+
+
+bool http_conn::write(){
+    printf("一次性写完所有数据\n");
+    return true;
+}
+
+
+// 业务处理
+// 这个process是由线程池中的工作线程调用的 操作函数
+// void http_conn::process(){
+//     // --- 业务逻辑 ----
+
+//     //  解析http请求
+
+//     printf("parse request, create response\n");
+
+//     // 生成相应
+// }
+
+void http_conn::process() {
+    // 定义完整的 HTML 响应正文
+    const char* response =
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Length: 31\r\n"  // 必须和正文内容字节数匹配
+        "Content-Type: text/html\r\n"
+        "\r\n"
+        "<html><body>Hello World</body></html>";  // 正文长度为 31 字节
+
+    send(m_sockfd, response, strlen(response), 0);
+    printf("HTML content length: %ld\n", strlen("<html><body>Hello World</body></html>"));
+
+}
+
+ 
 
