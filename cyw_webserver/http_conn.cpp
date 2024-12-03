@@ -1,6 +1,7 @@
 #include "http_conn.h"
 #include <string.h>
 
+
 // 给共享的static epollfd 和 user_count 初始化
 int http_conn::m_epollfd = -1;
 int http_conn::m_user_count = 0;
@@ -12,6 +13,7 @@ void setnonblocking(int fd){
     fcntl(fd, F_SETFL, new_flag);
 }
 
+
 // main.cpp
 // 添加文件描述符fd到epoll中： 这两个函数在外部实现，在http_conn.cpp里实现
 void addfd(int epollfd, int fd, bool one_shot){
@@ -20,7 +22,7 @@ void addfd(int epollfd, int fd, bool one_shot){
     event.events = EPOLLIN | EPOLLRDHUP; // LT 水平触发, RDUP: 这样就可以通过事件来判断
     // event.events = EPOLLIN | EPOLLET; // ET 边缘触发
 
-    // epoll one shot: 只能触发一次。如果想要再触发，就需要重置
+    // epoll one shot: 只能触发一次，防止同一通信被不同线程处理
     if(one_shot) {
         event.events | EPOLLONESHOT; 
     }
@@ -28,7 +30,6 @@ void addfd(int epollfd, int fd, bool one_shot){
 
     // 设置文件描述符为非阻塞
     setnonblocking(fd);
-
 }
 
 // main.cpp
