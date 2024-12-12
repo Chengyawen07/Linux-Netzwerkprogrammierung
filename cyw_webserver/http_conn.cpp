@@ -101,8 +101,6 @@ bool http_conn::read(){
             // 成功读取数据的时候：将读取的字节数累加到 m_read_idx
             m_read_idx += bytes_read;
         }
-
-
     }
 
     return true;
@@ -114,30 +112,52 @@ bool http_conn::write(){
     return true;
 }
 
+ 
+
+// 用有限状态机来解析请求
+//解析HTTP请求
+http_conn::HTTP_CODE http_conn::process_read(){
+    return http_conn::NO_REQUEST; // 需要使用作用域限定符
+
+}
+ // 解析请求首行
+http_conn::HTTP_CODE http_conn::parse_request_line(char * text){
+    return http_conn::NO_REQUEST; // 需要使用作用域限定符
+
+}
+//解析请求头
+http_conn::HTTP_CODE http_conn::parse_headers(char * text){
+    return http_conn::NO_REQUEST; // 需要使用作用域限定符
+
+}
+// 解析请求体
+http_conn::HTTP_CODE http_conn::parse_content(char * text){
+    return http_conn::NO_REQUEST; // 需要使用作用域限定符
+
+}
+
+http_conn::LINE_STATUS parse_line(); 
+
+
+
+
 
 // 业务处理
 // 这个process是由线程池中的工作线程调用的 操作函数
-// void http_conn::process(){
-//     // --- 业务逻辑 ----
-
-//     //  解析http请求
-
-//     printf("parse request, create response\n");
-
-//     // 生成相应
-// }
-
 void http_conn::process() {
     // 定义完整的 HTML 响应正文
-    const char* response =
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Length: 31\r\n"  // 必须和正文内容字节数匹配
-        "Content-Type: text/html\r\n"
-        "\r\n"
-        "<html><body>Hello World</body></html>";  // 正文长度为 31 字节
+    printf("parse request,create response\n");
 
-    send(m_sockfd, response, strlen(response), 0);
-    printf("HTML content length: %ld\n", strlen("<html><body>Hello World</body></html>"));
+    // 解析HTTP请求
+    HTTP_CODE read_ret =process_read();
+    if(read_ret == NO_REQUEST){
+        modifyfd(m_epollfd, m_sockfd, EPOLLIN);
+        return;
+    }
+
+    // 生成相应
+    // bool write_ret = process_write();
+
 
 }
 
